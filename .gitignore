@@ -1,33 +1,23 @@
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
 *.pyd
-
-# Virtual Environment
-venv/
-env/
+*.log
+*.env
+.env
+.venv/
 ai/
 
-# VSCode / IDE
+# VSCode
 .vscode/
-.idea/
 
-# Environment Variables
-.env
-
-# Local Database & Vector Store
-database/vector_store/
-*.faiss
-*.json
-*.pkl
-
-# PDF Files (ถ้าไม่อยากอัปโหลดขึ้น GitHub)
-database/*.pdf
-
-# Logs
-*.log
-
-# MacOS / Windows
+# Mac / Windows
 .DS_Store
 Thumbs.db
+
+# LangChain Vector Store
+database/vector_store/
+
+# Virtualenv
+ai/

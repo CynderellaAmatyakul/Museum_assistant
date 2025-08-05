@@ -1,6 +1,7 @@
 import logging
-
 from dotenv import load_dotenv
+
+load_dotenv()
 
 from livekit.agents import (
     Agent,
@@ -19,14 +20,19 @@ from livekit.agents.voice import MetricsCollectedEvent
 from livekit.plugins import deepgram, openai, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 from prompts import INSTRUCTIONS, WELCOME_MESSAGE
+from langchain_community.vectorstores import FAISS
+from langchain_openai import OpenAIEmbeddings
+
+vectorstore = FAISS.load_local(
+    "database/vector_store",
+    OpenAIEmbeddings(),
+    allow_dangerous_deserialization=True
+)
 
 # uncomment to enable Krisp background voice/noise cancellation
 # from livekit.plugins import noise_cancellation
 
 logger = logging.getLogger("basic-agent")
-
-load_dotenv()
-
 
 class MyAgent(Agent):
     def __init__(self) -> None:
@@ -38,6 +44,11 @@ class MyAgent(Agent):
         # when the agent is added to the session, it'll generate a reply
         # according to its instructions
         await self.session.say(WELCOME_MESSAGE)
+
+        # 🔍 ทดสอบเรียกฟังก์ชันตรง ๆ
+        #answer = await self.ask_about_museum(self.session, "โซน Mixed Reality มีกิจกรรมอะไรบ้าง")
+        #await self.session.say("ผลจากการค้นหาเอกสาร: " + answer)
+
         self.session.generate_reply()
 
     # all functions annotated with @function_tool will be passed to the LLM when this
@@ -60,6 +71,21 @@ class MyAgent(Agent):
         logger.info(f"Looking up weather for {location}")
 
         return "sunny with a temperature of 70 degrees."
+    
+    @function_tool
+    async def ask_about_museum(self, context: RunContext, question: str) -> str:
+        logger.info(f"🟢 called ask_about_museum with: {question}")  # ✅ log เพิ่ม
+        """
+        ค้นหาคำตอบจากข้อมูลในพิพิธภัณฑ์ เช่น นิทรรศการหรือสิ่งของจัดแสดง
+        """
+        docs = vectorstore.similarity_search(question, k=3)
+        if not docs:
+            return "ขออภัยค่ะ ไม่พบข้อมูลที่เกี่ยวข้องกับคำถามนี้"
+
+        # รวมคำตอบจากเอกสาร
+        response = "\n".join([doc.page_content.strip() for doc in docs])
+        # ย่อให้สั้นลง (optional: สามารถใช้ LLM สรุปอีกทีก็ได้)
+        return response[:500] + "..."  # ตัดยาวเกินไป
 
 
 def prewarm(proc: JobProcess):
@@ -78,7 +104,7 @@ async def entrypoint(ctx: JobContext):
     session = AgentSession(
         vad=ctx.proc.userdata["vad"],
         # any combination of STT, LLM, TTS, or realtime API can be used
-        llm=openai.LLM(model="gpt-4o-mini"),
+        llm=openai.LLM(model="gpt-3.5-turbo-1106", tool_choice="auto"),
         stt=openai.STT(model="whisper-1", language="th"),
         tts=openai.TTS(voice="shimmer"),
         # use LiveKit's turn detection model

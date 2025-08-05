@@ -7,3 +7,11 @@ flask[async]
 flask
 flask-cors
 uvicorn
+langchain-community>=0.0.10
+openai
+faiss-cpu
+pdfminer.six>=20221105
+unstructured
+pi-heif
+langchain-openai
+pdfplumber
