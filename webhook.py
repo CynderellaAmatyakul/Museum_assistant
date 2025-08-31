@@ -26,15 +26,21 @@ def split_into_verses(text: str, max_len: int = 20):
     """
     แบ่งข้อความเป็น verse (ทีละประโยคสั้นๆ)
     """
+    if not text.strip():
+        return []
+    
     words = text.split()
     verses, current = [], []
+    
     for w in words:
         current.append(w)
-        if len(current) >= max_len or w.endswith(('.', '!', '?')):
+        if len(current) >= max_len or w.endswith(('.', '!', '?', '।', '๏')):
             verses.append(" ".join(current))
             current = []
+    
     if current:
         verses.append(" ".join(current))
+    
     return verses
 
 def text_to_speech(text):
